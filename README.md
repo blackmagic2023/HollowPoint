@@ -30,11 +30,11 @@ VersionL: Beta 0.0.8
 
 -----Features-----------------------------------------------------------------------------------------------------------------
 
---Scanning;
+--Scanning;.
 
--Advanced internet protocol address generation
+-Advanced internet protocol address generation.
 
--Custom internet protocol address generation
+-Custom internet protocol address generation.
 
 -Region defined internet protocol address generation
 
