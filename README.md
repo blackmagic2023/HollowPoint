@@ -107,7 +107,7 @@ I will not be going into any explaination on the configuration of these applicat
 
 
 1. Create a database named HPtargets
-2. Create a table and name ittargetinfo
+2. Create a table and name it targetinfo
 
 ![DBandTableExample](https://github.com/blackmagic2023/HollowPoint/assets/149164084/a7b2a74d-154c-4eb5-9381-e3a9daadb6fb)
 
