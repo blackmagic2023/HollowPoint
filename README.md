@@ -118,3 +118,47 @@ I will not be going into any explaination on the configuration of these applicat
 4. **Make sure to set the 'id' column as the Primary Key. You can do this by right clicking on it and selecting 'Set Primary Key'
 5. Right click on the DataBase Table you created on the left hand side. Select 'Edit top 200 rows' to view your new table
 6. Now when you are using the connection string and commands you copy here on GitHub they should hopefully work without any issues
+
+
+
+# Connecting your MySQL Server to Visual Studio
+
+1. Now for this all to work we need to connect our new MySQL server to your visual studio project. You can acomplish this by selecting 'Tools' > 'Connect to DataBase' as shown below
+
+![connecttodb](https://github.com/blackmagic2023/HollowPoint/assets/149164084/44b51b51-c489-47ae-9fd5-f6f084901d4b)
+
+2. You should see a window appear asking for a 'Server Name'
+3. Open your Microsoft Server Management Studio and right click on your Server where we created your database and select 'Connect'
+
+![connect](https://github.com/blackmagic2023/HollowPoint/assets/149164084/997158f0-21b5-4434-aec8-f136ce50d32c)
+
+4. You should see a window appear with your server name
+
+![sername](https://github.com/blackmagic2023/HollowPoint/assets/149164084/975661f2-f6b8-4351-a786-5e44523cc81f)
+
+5. Copy your servername and paste it Microsoft Visual studio and click 'Refresh'
+6. you should now be able to select your DataBase 'HPtargets'
+
+![selectdb](https://github.com/blackmagic2023/HollowPoint/assets/149164084/c7394d3c-5b24-4198-b04e-8f99adb49a84)
+
+7. Select the DataBase and click 'Okay'
+
+You have now added everything you need for the project to work in beta
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
