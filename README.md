@@ -66,6 +66,7 @@ VersionL: Beta 0.0.8
 
 -Complete nmap options included
 
+.
 
 --Terminal;
 
