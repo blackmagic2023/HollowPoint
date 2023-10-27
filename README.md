@@ -27,3 +27,44 @@ VersionL: Beta 0.0.8
 ![zenmap](https://github.com/blackmagic2023/HollowPoint/assets/149164084/f1685e24-f574-46d4-98ed-7c293de773fb)
 
 -----------------------------------------------------------------------------------------------------------------------------
+
+-----Features-----------------------------------------------------------------------------------------------------------------
+--Scanning;
+-Advanced internet protocol address generation
+-Custom internet protocol address generation
+-Region defined internet protocol address generation
+-Automation option, so you dont have to interact with the software
+-Defined region's for generation; Canada, Mexico, USA, Russia, Germany, Australia, Spain, India, UK, China, Japan
+-No limitation, go as fast as your computer and network will allow
+
+--Information Gathering;
+-Check if a target is using TOR network
+-Check if target is using Proxy network
+-Check target ping
+-Target GEO location
+-Get target's host address
+-Get target's open ports
+-Get target's hosted domains
+-Detect target's operating system's
+-Complete nmap options included
+
+--Terminal;
+-zenmap | complete nmap GUI
+
+-----Coming Soon---------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
