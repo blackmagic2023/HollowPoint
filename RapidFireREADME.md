@@ -34,6 +34,55 @@ For this application's scan functionality you will need to use API's for each sc
 1. Create an account on https://api.c99.nl and purchase an API key ($5 per month $25 per year)
 2.  Copy your API key and paste it in the RapidFire.vb code where it says "Your_API_Key"
 
+## Using another API
+
+1. You must take the code where it says this in RapidFire.vb
+```vb
+Dim apiKey As String = "Your_API_Key"
+
+Dim fileReader As System.IO.StreamReader
+fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+Dim line As String
+Do
+    line = fileReader.ReadLine()
+    If Not (line Is Nothing) Then
+        Dim host As String = line
+        Dim url As String = $"https://api.c99.nl/proxydetector?key={apiKey}&ip={host}"
+        Using client As New HttpClient()
+            Dim response As HttpResponseMessage = Await client.GetAsync(url)
+            Dim content As String = Await response.Content.ReadAsStringAsync()
+
+            ' Process the response here, for example, display it in a MessageBox.
+            'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+            Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+            Console.SelectionStart = Console.Text.Length
+            Console.ScrollToCaret()
+            Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+            Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                writer.WriteLine(textToWrite)
+            End Using
+
+
+            Dim myconnection As SqlConnection
+            Dim mycommand As SqlCommand
+
+            myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+            myconnection.Open()
+            mycommand = New SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+            mycommand.ExecuteNonQuery()
+            myconnection.Close()
+
+        End Using
+    End If
+Loop Until line Is Nothing
+
+```
+
+You will find this code located in every scan option function as defined; "Private Sub ping()"
+
+
+
+
 That's all that is needed!
 
 # Notes
