@@ -1,9 +1,12 @@
 Imports System.IO
 Imports System.Text
 
+' SHOUTOUT B2ac9 for helping with the region range's!
+
 Public Class ScanSettings
     Private Sub ApplyScanCycleBtn_Click(sender As Object, e As EventArgs) Handles ApplyScanCycleBtn.Click
         If ScanCyclyBox.Text <> "" Then
+            'Save scan cycle number
             My.Settings.ScanCycle = ScanCyclyBox.Text
             My.Settings.Save()
             MsgBox("Scan cycle has been successfully updated to: " + Str(My.Settings.ScanCycle), MsgBoxStyle.Information + MsgBoxStyle.OkOnly, "ScanCycle Updated!")
