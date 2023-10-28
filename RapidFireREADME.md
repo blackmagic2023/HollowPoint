@@ -32,12 +32,13 @@ The main form consists of 18 elements not counting the labels. Those elements in
 For this application's scan functionality you will need to use API's for each scan option. I am using an API from the provider C99.API {https://api.c99.nl}. You may use other api's but will have to make modifications to the code and add things for parsing the data.
 
 1. Create an account on https://api.c99.nl and purchase an API key ($5 per month $25 per year)
-2.  Copy your API key and paste it in the RapidFire.vb code where it says "YourAPIKey"
+2.  Copy your API key and paste it in the RapidFire.vb code where it says "Your_API_Key"
 
+That's all that is needed!
 
 # Notes
 
-That's all she wrote... For the first 2 Forms
+That's all she wrote... For the first 3 Forms
 
 
 
