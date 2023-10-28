@@ -78,9 +78,33 @@ Loop Until line Is Nothing
 
 ```
 
-You will find this code located in every scan option function as defined; "Private Sub ping()"
+2. You will find this code located in every scan option function as defined; Ex. "Private Sub ping()". Now we mainly need to adjust this line of code found in all the scan setting functions.
 
+```vb
+Dim url As String = $"https://api.c99.nl/proxydetector?key={apiKey}&ip={host}"
+```
 
+3. replace the link to match your API and add {host} where the IP is required in your API.
+Ex.
+
+```vb
+Dim url As String = $"https://freeip2domain.com/api?ip={host}"
+```
+
+4. Now you may uncomment the line that displays the return from the api in a message box. Do this by removing "'" charcter:
+Ex.
+
+```vb
+ Process the response here, for example, display it in a MessageBox.
+ MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+```
+5. check your result from the API and parse as nessicary. You can parse in VB.NET by using this command:
+
+```vb
+content = content.split("Domains: ", 12)
+content.trim()
+content.split(";", 3)
+```
 
 
 That's all that is needed!
