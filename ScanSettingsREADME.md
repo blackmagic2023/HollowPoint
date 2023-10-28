@@ -1,5 +1,8 @@
 # Creating the ScanSettings Form
 
+![ScanSettings](https://github.com/blackmagic2023/HollowPoint/assets/149164084/d9607b4c-f878-4595-befc-260414a29ff0)
+
+
 ## Form Objects
 
 The main form consists of 31 elements not counting the labels. Those elements include;
@@ -59,5 +62,7 @@ The main form consists of 31 elements not counting the labels. Those elements in
 # Notes
 
 That's all she wrote... For the first 2 Forms
+
+
 
 
