@@ -1,22 +1,19 @@
-Imports System.IO
-Imports System.Net.Http
-Imports System.Net.NetworkInformation
-Imports System.Data.Common
 Imports System.Data.SqlClient
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement
-Imports Microsoft.VisualBasic.ApplicationServices
-Imports MySql.Data.MySqlClient
-Imports Mysqlx
+Imports System.IO
+Imports System.Net
+Imports System.Net.Http
+Imports System.Security.Principal
 Imports System.Text.RegularExpressions
-Imports System.Reflection.Metadata
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement
+Imports Microsoft.Data.SqlClient
 Imports System.Diagnostics
 
 Public Class RapidFire
-    Private myConn As New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True")
-    Public myCmd As SqlCommand
-    Private myReader As SqlDataReader
+    Private myConn As New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True")
+    Public myCmd As SqlClient.SqlCommand
+    Private myReader As SqlClient.SqlDataReader
     Private results As String
-    Private da As SqlDataAdapter
+    Private da As SqlClient.SqlDataAdapter
     Private dt As DataTable
     Private sql As String
     Async Sub Ping()
@@ -34,7 +31,7 @@ Public Class RapidFire
                     Dim response As HttpResponseMessage = Await client.GetAsync(url)
                     Dim content As String = Await response.Content.ReadAsStringAsync()
 
-                    Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                    Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
                     Console.SelectionStart = Console.Text.Length
                     Console.ScrollToCaret()
                     Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
@@ -50,302 +47,736 @@ Public Class RapidFire
 
 
     End Sub
-    Async Sub ProxyDetection()
-        Dim apiKey As String = "Your_API_Key"
 
-        Dim fileReader As System.IO.StreamReader
-        fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
-        Dim line As String
-        Do
-            line = fileReader.ReadLine()
-            If Not (line Is Nothing) Then
-                Dim host As String = line
-                Dim url As String = $"https://api.c99.nl/proxydetector?key={apiKey}&ip={host}"
-                Using client As New HttpClient()
-                    Dim response As HttpResponseMessage = Await client.GetAsync(url)
-                    Dim content As String = Await response.Content.ReadAsStringAsync()
+    Async Function ProxyDetectionAsync() As Task
 
-                    ' Process the response here, for example, display it in a MessageBox.
-                    'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
-                    Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Console.SelectionStart = Console.Text.Length
-                    Console.ScrollToCaret()
-                    Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
-                        writer.WriteLine(textToWrite)
-                    End Using
+        If My.Settings.ProxyEnabled = True Then
 
+            Dim apiKey As String = "Your_API_Key"
+            Dim proxyAddress As String = My.Settings.ProxyAddress
+            Dim proxyPort As Integer = My.Settings.ProxyPort
 
-                    Dim myconnection As SqlConnection
-                    Dim mycommand As SqlCommand
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
 
-                    myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-                    myconnection.Open()
-                    mycommand = New SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
-                    mycommand.ExecuteNonQuery()
-                    myconnection.Close()
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/proxydetector?key={apiKey}&ip={host}"
 
-                End Using
-            End If
-        Loop Until line Is Nothing
+                    ' Create a proxy object with the appropriate proxy address and port
+                    Dim proxy As New WebProxy(proxyAddress, proxyPort)
 
-        fileReader.Close()
+                    ' Create a request to the desired URL
+                    Dim request As HttpWebRequest = DirectCast(WebRequest.Create(url), HttpWebRequest)
 
+                    ' Assign the proxy to the request
+                    request.Proxy = proxy
 
-    End Sub
-    Async Sub GEOIP()
-        Dim apiKey As String = "Your_API_Key"
-
-        Dim fileReader As System.IO.StreamReader
-        fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
-        Dim line As String
-        Do
-            line = fileReader.ReadLine()
-            If Not (line Is Nothing) Then
-                Dim host As String = line
-                Dim url As String = $"https://api.c99.nl/geoip?key={apiKey}&host={host}"
-                Using client As New HttpClient()
-                    Dim response As HttpResponseMessage = Await client.GetAsync(url)
-                    Dim content As String = Await response.Content.ReadAsStringAsync()
-
-                    ' Process the response here, for example, display it in a MessageBox.
-                    'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
-                    Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Console.SelectionStart = Console.Text.Length
-                    Console.ScrollToCaret()
-                    Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
-                        writer.WriteLine(textToWrite)
-                    End Using
-                    Dim myconnection As SqlConnection
-                    Dim mycommand As SqlCommand
-
-                    myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-                    myconnection.Open()
-
-                    Dim match As Match = Regex.Match(content, "Country Code: ([A-Z]+)")
-                    If match.Success Then
-                        Dim countryCode As String = match.Groups(1).Value
-                        content = countryCode
+                    If My.Settings.ProxyCredentials = True Then
+                        request.Proxy.Credentials = New NetworkCredential(My.Settings.ProxyUsername, My.Settings.ProxyPassword)
                     End If
 
 
+                    Using response As HttpWebResponse = DirectCast(request.GetResponse(), HttpWebResponse)
+                        Dim dataStream As System.IO.Stream = response.GetResponseStream()
+                        Dim reader As New System.IO.StreamReader(dataStream)
+                        Dim content As String = reader.ReadToEnd()
 
-                    mycommand = New SqlCommand("UPDATE targetinfo SET [location] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
-                    mycommand.ExecuteNonQuery()
-                    myconnection.Close()
-                End Using
-            End If
-        Loop Until line Is Nothing
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
 
-        fileReader.Close()
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
 
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+        Else
+
+            Dim apiKey As String = "Your_API_Key"
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/proxydetector?key={apiKey}&ip={host}"
+                    Using client As New HttpClient()
+                        Dim response As HttpResponseMessage = Await client.GetAsync(url)
+                        Dim content As String = Await response.Content.ReadAsStringAsync()
+
+                        ' Process the response here, for example, display it in a MessageBox.
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+
+
+
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+        End If
+
+
+
+
+
+
+    End Function
+    Async Sub GEOIP()
+
+        If My.Settings.ProxyEnabled = True Then
+
+            Dim apiKey As String = "Your_API_Key"
+            Dim proxyAddress As String = My.Settings.ProxyAddress
+            Dim proxyPort As Integer = My.Settings.ProxyPort
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/geoip?key={apiKey}&host={host}"
+
+                    ' Create a proxy object with the appropriate proxy address and port
+                    Dim proxy As New WebProxy(proxyAddress, proxyPort)
+
+                    ' Create a request to the desired URL
+                    Dim request As HttpWebRequest = DirectCast(WebRequest.Create(url), HttpWebRequest)
+
+                    ' Assign the proxy to the request
+                    request.Proxy = proxy
+
+                    If My.Settings.ProxyCredentials = True Then
+                        request.Proxy.Credentials = New NetworkCredential(My.Settings.ProxyUsername, My.Settings.ProxyPassword)
+                    End If
+
+
+                    Using response As HttpWebResponse = DirectCast(request.GetResponse(), HttpWebResponse)
+                        Dim dataStream As System.IO.Stream = response.GetResponseStream()
+                        Dim reader As New System.IO.StreamReader(dataStream)
+                        Dim content As String = reader.ReadToEnd()
+
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+        Else
+
+            Dim apiKey As String = "Your_API_Key"
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/geoip?key={apiKey}&host={host}"
+                    Using client As New HttpClient()
+                        Dim response As HttpResponseMessage = Await client.GetAsync(url)
+                        Dim content As String = Await response.Content.ReadAsStringAsync()
+
+                        ' Process the response here, for example, display it in a MessageBox.
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+
+                        Dim match As Match = Regex.Match(content, "Country Code: ([A-Z]+)")
+                        If match.Success Then
+                            Dim countryCode As String = match.Groups(1).Value
+                            content = countryCode
+
+                            mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [location] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                            mycommand.ExecuteNonQuery()
+                            myconnection.Close()
+
+                        Else
+
+                            Dim countryCode As String = match.Groups(1).Value
+                            content = countryCode
+
+                            mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [location] = 'NA!' WHERE [ipaddr] = '" + host + "'", myconnection)
+                            mycommand.ExecuteNonQuery()
+                            myconnection.Close()
+
+                        End If
+
+
+
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+        End If
 
     End Sub
     Async Sub IP2Domain()
-        Dim apiKey As String = "Your_API_Key"
 
-        Dim fileReader As System.IO.StreamReader
-        fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
-        Dim line As String
-        Do
-            line = fileReader.ReadLine()
-            If Not (line Is Nothing) Then
-                Dim host As String = line
-                Dim url As String = $"https://api.c99.nl/ip2domains?key={apiKey}&ip={host}"
-                Using client As New HttpClient()
-                    Dim response As HttpResponseMessage = Await client.GetAsync(url)
-                    Dim content As String = Await response.Content.ReadAsStringAsync()
 
-                    ' Process the response here, for example, display it in a MessageBox.
-                    'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
-                    Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Console.SelectionStart = Console.Text.Length
-                    Console.ScrollToCaret()
-                    Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
-                        writer.WriteLine(textToWrite)
+        If My.Settings.ProxyEnabled = True Then
+
+            Dim apiKey As String = "Your_API_Key"
+            Dim proxyAddress As String = My.Settings.ProxyAddress
+            Dim proxyPort As Integer = My.Settings.ProxyPort
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/ip2domains?key={apiKey}&ip={host}"
+
+                    ' Create a proxy object with the appropriate proxy address and port
+                    Dim proxy As New WebProxy(proxyAddress, proxyPort)
+
+                    ' Create a request to the desired URL
+                    Dim request As HttpWebRequest = DirectCast(WebRequest.Create(url), HttpWebRequest)
+
+                    ' Assign the proxy to the request
+                    request.Proxy = proxy
+
+                    If My.Settings.ProxyCredentials = True Then
+                        request.Proxy.Credentials = New NetworkCredential(My.Settings.ProxyUsername, My.Settings.ProxyPassword)
+                    End If
+
+
+                    Using response As HttpWebResponse = DirectCast(request.GetResponse(), HttpWebResponse)
+                        Dim dataStream As System.IO.Stream = response.GetResponseStream()
+                        Dim reader As New System.IO.StreamReader(dataStream)
+                        Dim content As String = reader.ReadToEnd()
+
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
                     End Using
-                    Dim myconnection As SqlConnection
-                    Dim mycommand As SqlCommand
+                End If
+            Loop Until line Is Nothing
 
-                    myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-                    myconnection.Open()
-                    mycommand = New SqlCommand("UPDATE targetinfo SET [domains] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
-                    mycommand.ExecuteNonQuery()
-                    myconnection.Close()
-                End Using
-            End If
-        Loop Until line Is Nothing
+            fileReader.Close()
 
-        fileReader.Close()
+        Else
+
+            Dim apiKey As String = "Your_API_Key"
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/ip2domains?key={apiKey}&ip={host}"
+                    Using client As New HttpClient()
+                        Dim response As HttpResponseMessage = Await client.GetAsync(url)
+                        Dim content As String = Await response.Content.ReadAsStringAsync()
+
+                        ' Process the response here, for example, display it in a MessageBox.
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [domains] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+        End If
 
 
     End Sub
     Async Sub PortScanner()
-        Dim apiKey As String = "Your_API_Key"
 
-        Dim fileReader As System.IO.StreamReader
-        fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
-        Dim line As String
-        Do
-            line = fileReader.ReadLine()
-            If Not (line Is Nothing) Then
-                Dim host As String = line
-                Dim url As String = $"https://api.c99.nl/portscanner?key={apiKey}&host={host}"
-                Using client As New HttpClient()
-                    Dim response As HttpResponseMessage = Await client.GetAsync(url)
-                    Dim content As String = Await response.Content.ReadAsStringAsync()
+        If My.Settings.ProxyEnabled = True Then
 
-                    ' Process the response here, for example, display it in a MessageBox.
-                    'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
-                    Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Console.SelectionStart = Console.Text.Length
-                    Console.ScrollToCaret()
-                    Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
-                        writer.WriteLine(textToWrite)
+            Dim apiKey As String = "Your_API_Key"
+            Dim proxyAddress As String = My.Settings.ProxyAddress
+            Dim proxyPort As Integer = My.Settings.ProxyPort
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/portscanner?key={apiKey}&host={host}"
+
+                    ' Create a proxy object with the appropriate proxy address and port
+                    Dim proxy As New WebProxy(proxyAddress, proxyPort)
+
+                    ' Create a request to the desired URL
+                    Dim request As HttpWebRequest = DirectCast(WebRequest.Create(url), HttpWebRequest)
+
+                    ' Assign the proxy to the request
+                    request.Proxy = proxy
+
+                    If My.Settings.ProxyCredentials = True Then
+                        request.Proxy.Credentials = New NetworkCredential(My.Settings.ProxyUsername, My.Settings.ProxyPassword)
+                    End If
+
+
+                    Using response As HttpWebResponse = DirectCast(request.GetResponse(), HttpWebResponse)
+                        Dim dataStream As System.IO.Stream = response.GetResponseStream()
+                        Dim reader As New System.IO.StreamReader(dataStream)
+                        Dim content As String = reader.ReadToEnd()
+
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
                     End Using
-                    Dim myconnection As SqlConnection
-                    Dim mycommand As SqlCommand
+                End If
+            Loop Until line Is Nothing
 
-                    myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-                    myconnection.Open()
-                    mycommand = New SqlCommand("UPDATE targetinfo SET [ports] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
-                    mycommand.ExecuteNonQuery()
-                    myconnection.Close()
-                End Using
-            End If
-        Loop Until line Is Nothing
+            fileReader.Close()
 
-        fileReader.Close()
+        Else
 
+
+            Dim apiKey As String = "Your_API_Key"
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/portscanner?key={apiKey}&host={host}"
+                    Using client As New HttpClient()
+                        Dim response As HttpResponseMessage = Await client.GetAsync(url)
+                        Dim content As String = Await response.Content.ReadAsStringAsync()
+
+                        ' Process the response here, for example, display it in a MessageBox.
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [ports] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+
+        End If
 
     End Sub
     Async Sub TORCheck()
-        Dim apiKey As String = "Your_API_Key"
 
-        Dim fileReader As System.IO.StreamReader
-        fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
-        Dim line As String
-        Do
-            line = fileReader.ReadLine()
-            If Not (line Is Nothing) Then
-                Dim host As String = line
-                Dim url As String = $"https://api.c99.nl/torchecker?key={apiKey}&ip={host}"
-                Using client As New HttpClient()
-                    Dim response As HttpResponseMessage = Await client.GetAsync(url)
-                    Dim content As String = Await response.Content.ReadAsStringAsync()
+        If My.Settings.ProxyEnabled = True Then
 
-                    ' Process the response here, for example, display it in a MessageBox.
-                    'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
-                    Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Console.SelectionStart = Console.Text.Length
-                    Console.ScrollToCaret()
-                    Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
-                        writer.WriteLine(textToWrite)
+            Dim apiKey As String = "Your_API_Key"
+            Dim proxyAddress As String = My.Settings.ProxyAddress
+            Dim proxyPort As Integer = My.Settings.ProxyPort
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/torchecker?key={apiKey}&ip={host}"
+
+                    ' Create a proxy object with the appropriate proxy address and port
+                    Dim proxy As New WebProxy(proxyAddress, proxyPort)
+
+                    ' Create a request to the desired URL
+                    Dim request As HttpWebRequest = DirectCast(WebRequest.Create(url), HttpWebRequest)
+
+                    ' Assign the proxy to the request
+                    request.Proxy = proxy
+
+                    If My.Settings.ProxyCredentials = True Then
+                        request.Proxy.Credentials = New NetworkCredential(My.Settings.ProxyUsername, My.Settings.ProxyPassword)
+                    End If
+
+
+                    Using response As HttpWebResponse = DirectCast(request.GetResponse(), HttpWebResponse)
+                        Dim dataStream As System.IO.Stream = response.GetResponseStream()
+                        Dim reader As New System.IO.StreamReader(dataStream)
+                        Dim content As String = reader.ReadToEnd()
+
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
                     End Using
-                    Dim myconnection As SqlConnection
-                    Dim mycommand As SqlCommand
+                End If
+            Loop Until line Is Nothing
 
-                    myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-                    myconnection.Open()
-                    mycommand = New SqlCommand("UPDATE targetinfo SET [usingtor] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
-                    mycommand.ExecuteNonQuery()
-                    myconnection.Close()
-                End Using
-            End If
-        Loop Until line Is Nothing
+            fileReader.Close()
 
-        fileReader.Close()
+        Else
+
+
+
+
+            Dim apiKey As String = "Your_API_Key"
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/torchecker?key={apiKey}&ip={host}"
+                    Using client As New HttpClient()
+                        Dim response As HttpResponseMessage = Await client.GetAsync(url)
+                        Dim content As String = Await response.Content.ReadAsStringAsync()
+
+                        ' Process the response here, for example, display it in a MessageBox.
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [usingtor] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+
+        End If
 
 
     End Sub
     Async Sub IPtoHost()
-        Dim apiKey As String = "Your_API_Key"
 
-        Dim fileReader As System.IO.StreamReader
-        fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
-        Dim line As String
-        Do
-            line = fileReader.ReadLine()
-            If Not (line Is Nothing) Then
-                Dim host As String = line
-                Dim url As String = $"https://api.c99.nl/gethostname?key={apiKey}&host={host}"
-                Using client As New HttpClient()
-                    Dim response As HttpResponseMessage = Await client.GetAsync(url)
-                    Dim content As String = Await response.Content.ReadAsStringAsync()
+        If My.Settings.ProxyEnabled = True Then
 
-                    ' Process the response here, for example, display it in a MessageBox.
-                    'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
-                    Console.Text = Console.Text + "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Console.SelectionStart = Console.Text.Length
-                    Console.ScrollToCaret()
-                    Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
-                    Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
-                        writer.WriteLine(textToWrite)
+            Dim apiKey As String = "Your_API_Key"
+            Dim proxyAddress As String = My.Settings.ProxyAddress
+            Dim proxyPort As Integer = My.Settings.ProxyPort
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+
+            Do
+                line = fileReader.ReadLine()
+                If Not (line IsNot Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/gethostname?key={apiKey}&host={host}"
+
+                    ' Create a proxy object with the appropriate proxy address and port
+                    Dim proxy As New WebProxy(proxyAddress, proxyPort)
+
+                    ' Create a request to the desired URL
+                    Dim request As HttpWebRequest = DirectCast(WebRequest.Create(url), HttpWebRequest)
+
+                    ' Assign the proxy to the request
+                    request.Proxy = proxy
+
+                    If My.Settings.ProxyCredentials = True Then
+                        request.Proxy.Credentials = New NetworkCredential(My.Settings.ProxyUsername, My.Settings.ProxyPassword)
+                    End If
+
+
+                    Using response As HttpWebResponse = DirectCast(request.GetResponse(), HttpWebResponse)
+                        Dim dataStream As System.IO.Stream = response.GetResponseStream()
+                        Dim reader As New System.IO.StreamReader(dataStream)
+                        Dim content As String = reader.ReadToEnd()
+
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [proxy] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
                     End Using
-                    Dim myconnection As SqlConnection
-                    Dim mycommand As SqlCommand
+                End If
+            Loop Until line Is Nothing
 
-                    myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-                    myconnection.Open()
-                    mycommand = New SqlCommand("UPDATE targetinfo SET [hostname] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
-                    mycommand.ExecuteNonQuery()
-                    myconnection.Close()
-                End Using
-            End If
-        Loop Until line Is Nothing
+            fileReader.Close()
 
-        fileReader.Close()
+        Else
 
+            Dim apiKey As String = "Your_API_Key"
+
+            Dim fileReader As System.IO.StreamReader
+            fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+            Dim line As String
+            Do
+                line = fileReader.ReadLine()
+                If Not (line Is Nothing) Then
+                    Dim host As String = line
+                    Dim url As String = $"https://api.c99.nl/gethostname?key={apiKey}&host={host}"
+                    Using client As New HttpClient()
+                        Dim response As HttpResponseMessage = Await client.GetAsync(url)
+                        Dim content As String = Await response.Content.ReadAsStringAsync()
+
+                        ' Process the response here, for example, display it in a MessageBox.
+                        'MessageBox.Show(content, "API Response", MessageBoxButtons.OK)
+                        Console.Text = Console.Text + "$ " + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Console.SelectionStart = Console.Text.Length
+                        Console.ScrollToCaret()
+                        Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": " + content + Environment.NewLine
+                        Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                            writer.WriteLine(textToWrite)
+                        End Using
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [hostname] = '" + content + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+                    End Using
+                End If
+            Loop Until line Is Nothing
+
+            fileReader.Close()
+
+
+        End If
 
     End Sub
 
 
     Private Sub RapidFire_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
         Dim fileReader As System.IO.StreamReader
         fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
         Dim line As String
         Do
             line = fileReader.ReadLine()
             If Not (line Is Nothing) Then
-                Dim item As New ListViewItem(line)
-                ListView1.Items.Add(item)
+                Dim itm As String = line
+                Dim id As Integer = My.Settings.DBentryid + 1
+
+                ' Increment the DBentryid before saving it
+                My.Settings.DBentryid = id
+                My.Settings.Save()
+
+                ' Check if the IP address already exists in the database
+                If Not IsIpExistsInDatabase(itm) Then
+                    ' Create a new connection to the database
+                    Using mycon2 As New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        ' Open the connection
+                        mycon2.Open()
+
+                        ' Create a parameterized SQL command to insert data
+                        Dim query As String = "INSERT INTO [targetinfo] ([id],[ipaddr]) VALUES (@id, @ipaddr)"
+                        Using mycomm As New SqlClient.SqlCommand(query, mycon2)
+                            ' Add parameters to the command
+                            mycomm.Parameters.AddWithValue("@id", id)
+                            mycomm.Parameters.AddWithValue("@ipaddr", itm)
+
+                            ' Execute the command
+                            mycomm.ExecuteNonQuery()
+                        End Using
+
+                        ' Close the connection
+                        mycon2.Close()
+                    End Using
+                End If
             End If
         Loop Until line Is Nothing
 
-        Dim myconnection As SqlConnection
-        Dim mycommand As SqlCommand
 
-        myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+
+        Dim myconnection As SqlClient.SqlConnection
+        Dim mycommand As SqlClient.SqlCommand
+
+        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
         myconnection.Open()
-        mycommand = New SqlCommand("SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[domains],[location] FROM [targetinfo]", myconnection)
+        mycommand = New SqlClient.SqlCommand("SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[osystem],[location],[domains] FROM [targetinfo]", myconnection)
         mycommand.ExecuteNonQuery()
 
 
         '"SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[location] FROM [targetinfo]"
 
 
-        Dim reader As SqlDataReader = mycommand.ExecuteReader()
+        Dim reader As SqlClient.SqlDataReader = mycommand.ExecuteReader()
 
         ' Clear any existing items in the ListView
         ListView2.Items.Clear()
 
         ' Add columns to the ListView
-        ListView2.Columns.Add("")
-        ListView2.Columns.Add("IP")
-        ListView2.Columns.Add("Hostname")
+        ListView2.Columns.Add("id", 1)
+        ListView2.Columns.Add("IP", 100)
+        ListView2.Columns.Add("Hostname", 175)
         ListView2.Columns.Add("Tor")
         ListView2.Columns.Add("Proxy")
-        ListView2.Columns.Add("Ports")
+        ListView2.Columns.Add("Ports", 100)
+        ListView2.Columns.Add("osystem", 100)
+        ListView2.Columns.Add("XYZ", 30)
         ListView2.Columns.Add("Domains")
-        ListView2.Columns.Add("XYZ")
+
+
+
 
         ' Read the data and add it to the ListView
         While reader.Read()
-            Dim row As ListViewItem = New ListViewItem()
+            Dim row As New ListViewItem()
             For i As Integer = 1 To reader.FieldCount - 1
                 row.SubItems.Add(reader(i).ToString())
             Next
@@ -359,8 +790,129 @@ Public Class RapidFire
         myconnection.Close()
 
         fileReader.Close()
-    End Sub
 
+        Button2.PerformClick()
+
+    End Sub
+    ' Function to check if the IP address already exists in the database
+    Private Function IsIpExistsInDatabase(ipAddress As String) As Boolean
+        Dim query As String = "SELECT COUNT(*) FROM [targetinfo] WHERE [ipaddr] = @ipaddr"
+        Using connection As New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+            Using command As New SqlClient.SqlCommand(query, connection)
+                command.Parameters.AddWithValue("@ipaddr", ipAddress)
+                connection.Open()
+                Dim count As Integer = CInt(command.ExecuteScalar())
+                Return count > 0
+            End Using
+        End Using
+    End Function
+    Sub OSDetection()
+
+
+        Dim fileReader As System.IO.StreamReader
+        fileReader = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+        Dim line As String
+        Do
+            line = fileReader.ReadLine()
+            If Not (line Is Nothing) Then
+                Dim host As String = line
+                Console.Text = Console.Text + TimeOfDay + ": OS SCAN STARTED... PLEASE WAIT!!!"
+
+                ' Construct the PowerShell command
+                Dim command As String = "nmap -O -A -Pn " + host + " | Out-File C:\Users\tyler\Documents\hollowpoint\dll\OSDump.txt"
+
+                ' Create process info object
+                Dim psi As New ProcessStartInfo()
+                psi.FileName = "powershell.exe"
+                psi.Arguments = "-Command """ + command + """"
+                psi.Verb = "runas" ' Request admin privileges
+                psi.UseShellExecute = True
+
+                ' Start the process
+                Dim process As Process = Process.Start(psi)
+                ' Wait for the process to exit
+                process.WaitForExit()
+
+
+                Dim textToWrite As String = "$" + host + ": " + TimeOfDay + ": Complete!" + Environment.NewLine
+                Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\TargetDump\TargetDump.txt")
+                    writer.WriteLine(textToWrite)
+                End Using
+
+                Dim filePath As String = "C:\Users\" + Environment.UserName + "\Documents\hollowpoint\dll\OSDump.txt"
+
+                Try
+                    ' Read all text from the file
+                    Dim os As String = File.ReadAllText(filePath)
+                    'Console.Text = Console.Text + "$ " + TimeOfDay + ": OS: " + os + Environment.NewLine
+                    'Console.SelectionStart = Console.Text.Length
+                    'Console.ScrollToCaret()
+                    'MsgBox(os)
+
+                    Dim datastring As String = os
+                    Dim pattern As String = "Running \(JUST GUESSING\): ([\w\s.-]+)"
+                    Dim pattern2 As String = "Running: ([\w\s.,|-]+)"
+                    ' Use Regex.Match to find the match
+                    Dim match As Match = Regex.Match(datastring, pattern)
+                    Dim match2 As Match = Regex.Match(datastring, pattern2)
+                    ' If a match is found, extract the operating system information
+
+                    If match.Success Then
+
+                        Dim operatingSystem As String = match.Groups(1).Value
+                        'MsgBox(operatingSystem)
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [osystem] = '" + operatingSystem + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+
+
+
+
+
+                        Console.Text = Console.Text + "Operating System: " & operatingSystem
+                    Else
+
+                    End If
+
+                    If match2.Success Then
+                        Dim operatingSystem2 As String = match2.Groups(1).Value
+                        'MsgBox(operatingSystem2)
+
+                        Dim myconnection As SqlClient.SqlConnection
+                        Dim mycommand As SqlClient.SqlCommand
+
+                        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                        myconnection.Open()
+                        mycommand = New SqlClient.SqlCommand("UPDATE targetinfo SET [osystem] = '" + operatingSystem2 + "' WHERE [ipaddr] = '" + host + "'", myconnection)
+                        mycommand.ExecuteNonQuery()
+                        myconnection.Close()
+
+                        Console.Text = Console.Text + "Operating System: " & operatingSystem2
+                    Else
+                        Console.Text = Console.Text + "Operating system information not found."
+                    End If
+
+                Catch ex As Exception
+                    Console.Text = Console.Text + "An error occurred: " & ex.Message
+                End Try
+
+
+                ' Wait for 5 minutes before starting the next scan
+                'Threading.Thread.Sleep(300000) ' 300000 milliseconds = 5 minutes
+            End If
+        Loop Until line Is Nothing
+
+        fileReader.Close()
+
+
+
+    End Sub
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         If CheckBox1.Checked = True Then
             IPtoHost()
@@ -383,12 +935,17 @@ Public Class RapidFire
         End If
 
         If CheckBox6.Checked = True Then
-            ProxyDetection()
+            ProxyDetectionAsync()
         End If
 
         If CheckBox7.Checked = True Then
             Ping()
         End If
+
+        If CheckBox8.Checked = True Then
+            OSDetection()
+        End If
+
 
     End Sub
 
@@ -410,19 +967,47 @@ Public Class RapidFire
             End If
         Loop Until line Is Nothing
 
-        Dim myconnection As SqlConnection
-        Dim mycommand As SqlCommand
+        Dim myconnection As SqlClient.SqlConnection
+        Dim mycommand As SqlClient.SqlCommand
 
-        myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+        myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
         myconnection.Open()
-        mycommand = New SqlCommand("SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[domains],[location] FROM [targetinfo]", myconnection)
+        mycommand = New SqlClient.SqlCommand("SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[osystem],[location],[domains] FROM [targetinfo]", myconnection)
         mycommand.ExecuteNonQuery()
+
+        If My.Settings.FilterProxy = True Then
+            'DELETE FROM [targetinfo] WHERE proxy<>'No proxy detected.'
+            mycommand = New SqlClient.SqlCommand("DELETE FROM [targetinfo] WHERE proxy<>'No proxy detected.'", myconnection)
+            mycommand.ExecuteNonQuery()
+        End If
+
+        If My.Settings.FilterTOR = True Then
+            'DELETE FROM [targetinfo] WHERE usingtor<>'No TOR Detected!'
+            mycommand = New SqlClient.SqlCommand("DELETE FROM [targetinfo] WHERE usingtor<>'No TOR Detected!'", myconnection)
+            mycommand.ExecuteNonQuery()
+        End If
+
+        If My.Settings.FilterPorts = True Then
+            'DELETE FROM [targetinfo] WHERE ports='No open ports'
+            mycommand = New SqlClient.SqlCommand("DELETE FROM [targetinfo] WHERE ports='No open ports'", myconnection)
+            mycommand.ExecuteNonQuery()
+        End If
+
+        If My.Settings.FilterDomains = True Then
+            'DELETE FROM [targetinfo] WHERE domains<>''
+            mycommand = New SqlClient.SqlCommand("DELETE FROM [targetinfo] WHERE domains<>''", myconnection)
+            mycommand.ExecuteNonQuery()
+        End If
+
+
+
+
 
 
         '"SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[location] FROM [targetinfo]"
 
 
-        Dim reader As SqlDataReader = mycommand.ExecuteReader()
+        Dim reader As SqlClient.SqlDataReader = mycommand.ExecuteReader()
 
         ' Clear any existing items in the ListView
         ListView2.Items.Clear()
@@ -436,16 +1021,67 @@ Public Class RapidFire
             ListView2.Items.Add(row)
         End While
 
+
+
+
         ' Close the data reader and the connection
+        Dim fileReader1 As System.IO.StreamReader
+        fileReader1 = My.Computer.FileSystem.OpenTextFileReader("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+        Dim line1 As String
+        ListView1.Items.Clear()
+
+        Do
+            line1 = fileReader1.ReadLine()
+            If Not (line1 Is Nothing) Then
+                Dim item1 As New ListViewItem(line1)
+                ListView1.Items.Add(item1)
+            End If
+        Loop Until line1 Is Nothing
+
+        Dim myconnection1 As SqlClient.SqlConnection
+        Dim mycommand1 As SqlClient.SqlCommand
+
+        myconnection1 = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+        myconnection1.Open()
+        mycommand1 = New SqlClient.SqlCommand("SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[osystem],[location],[domains] FROM [targetinfo]", myconnection1)
+        mycommand1.ExecuteNonQuery()
+
+
+        '"SELECT [id],[ipaddr],[hostname],[usingtor],[proxy],[ports],[location] FROM [targetinfo]"
+
+
+        Dim reader1 As SqlClient.SqlDataReader = mycommand1.ExecuteReader()
+
+        ' Clear any existing items in the ListView
+        ListView2.Items.Clear()
+
+        ' Read the data and add it to the ListView
+        While reader1.Read()
+            Dim row1 As ListViewItem = New ListViewItem()
+            For i As Integer = 1 To reader1.FieldCount - 1
+                row1.SubItems.Add(reader1(i).ToString())
+            Next
+            ListView2.Items.Add(row1)
+        End While
+
+        ' Close the data reader and the connection
+
 
         reader.Close()
 
         myconnection.Close()
 
         fileReader.Close()
+
+
+        reader1.Close()
+
+        myconnection1.Close()
+
+        fileReader1.Close()
     End Sub
 
-    Private Sub ApplyScanCycleBtn_Click(sender As Object, e As EventArgs) Handles ApplyScanCycleBtn.Click
+    Public Sub ApplyScanCycleBtn_Click(sender As Object, e As EventArgs) Handles ApplyScanCycleBtn.Click
         If CommandBox.Text <> "-$" Then
             If CommandBox.Text.Contains("zenmap") Then
                 Console.Text = Console.Text + "-$" + CommandBox.Text + ": " + TimeOfDay + ": Starting NMAP.GUI.ZENMAP..." + Environment.NewLine
@@ -487,7 +1123,29 @@ Public Class RapidFire
                 process.StandardInput.Close()
                 process.Close()
 
-            ElseIf CommandBox.Text.Contains("term") Then
+            ElseIf CommandBox.Text <> "" Then
+
+                Dim command As String = CommandBox.Text.Trim()
+
+                ' Specify the path to WSL and the command to be executed
+                Dim processInfo As New ProcessStartInfo("wsl", command)
+                processInfo.RedirectStandardOutput = True
+                processInfo.RedirectStandardError = True
+                processInfo.UseShellExecute = False
+                processInfo.CreateNoWindow = True
+
+                ' Start the process
+                Dim process As Process = Process.Start(processInfo)
+
+                ' Read the output and error streams asynchronously
+                Dim outputTask As Task(Of String) = process.StandardOutput.ReadToEndAsync()
+                Dim errorTask As Task(Of String) = process.StandardError.ReadToEndAsync()
+
+                ' Update the console with the output
+                UpdateConsole(outputTask.Result)
+                UpdateConsole(errorTask.Result)
+
+
 
             Else
                 Console.Text = Console.Text + "-$" + CommandBox.Text + ": " + TimeOfDay + ": Command not found!" + Environment.NewLine
@@ -496,6 +1154,16 @@ Public Class RapidFire
             End If
             CommandBox.Text = "-$"
 
+        End If
+
+    End Sub
+    Private Sub UpdateConsole(text As String)
+        ' Invoke on the UI thread to update the RichTextBox
+        If Console.InvokeRequired Then
+            Console.Invoke(Sub() UpdateConsole(text))
+        Else
+            Console.AppendText(text)
+            Console.ScrollToCaret()
         End If
     End Sub
 
@@ -507,15 +1175,15 @@ Public Class RapidFire
             Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
                 writer.WriteLine(textToWrite + Environment.NewLine)
             End Using
-            Dim myconnection As SqlConnection
-            Dim mycommand As SqlCommand
+            Dim myconnection As SqlClient.SqlConnection
+            Dim mycommand As SqlClient.SqlCommand
             Dim id As Integer = My.Settings.DBentryid + 1
             My.Settings.DBentryid = My.Settings.DBentryid + 1
             My.Settings.Save()
 
-            myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+            myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
             myconnection.Open()
-            mycommand = New SqlCommand("INSERT INTO [targetinfo]([id],[ipaddr]) VALUES('" + Str(id) + "','" + AddIPBox.Text + "')", myconnection)
+            mycommand = New SqlClient.SqlCommand("INSERT INTO [targetinfo]([id],[ipaddr]) VALUES('" + Str(id) + "','" + AddIPBox.Text + "')", myconnection)
             mycommand.ExecuteNonQuery()
             myconnection.Close()
             AddIPBox.Clear()
@@ -528,5 +1196,9 @@ Public Class RapidFire
 
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
         FilterSettings.Show()
+    End Sub
+
+    Private Sub Button4_Click(sender As Object, e As EventArgs) Handles Button4.Click
+        Exploitation.Show()
     End Sub
 End Class
