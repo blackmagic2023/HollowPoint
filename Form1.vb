@@ -31,6 +31,7 @@ Public Class Form1
             ' Add targets to listbox
             Dim a As String = My.Computer.FileSystem.ReadAllText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
             Dim b As String() = a.Split(Environment.NewLine)
+            ListBox2.Items.Clear()
             ListBox2.Items.AddRange(b)
             ' Add each propogated target to MySQL DataBase from propogated target list
             For Each Line As String In File.ReadLines("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
@@ -39,12 +40,15 @@ Public Class Form1
                 Dim id As Integer = My.Settings.DBentryid + 1
                 My.Settings.DBentryid = My.Settings.DBentryid + 1
                 My.Settings.Save()
+                'MsgBox(Line)
+                If Line <> "" Then
+                    myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                    myconnection.Open()
+                    mycommand = New SqlCommand("INSERT INTO [targetinfo]([id],[ipaddr]) VALUES('" + Str(id) + "','" + Line + "')", myconnection)
+                    'mycommand.ExecuteNonQuery()
+                    myconnection.Close()
+                End If
 
-                myconnection = New SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-                myconnection.Open()
-                mycommand = New SqlCommand("INSERT INTO [targetinfo]([id],[ipaddr]) VALUES('" + Str(id) + "','" + Line + "')", myconnection)
-                mycommand.ExecuteNonQuery()
-                myconnection.Close()
             Next
 
             Loader.Hide() ' Hide loading animation
@@ -55,6 +59,7 @@ Public Class Form1
     End Sub
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         ' Check if user has internet access
+        'My.Settings.DBentryid = 0
         If My.Computer.Network.Ping("1.1.1.1") Then
             ' Load candidates into listbox on form spawn
             Dim lineCount = File.ReadAllLines(My.Settings.ScanDataDirectory).Length
@@ -234,5 +239,9 @@ Public Class Form1
         ListBox2.Items.Clear()
         System.IO.File.WriteAllText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt", "")
         Label3.Text = "0"
+    End Sub
+
+    Private Sub AboutToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles AboutToolStripMenuItem.Click
+        About.Show()
     End Sub
 End Class
