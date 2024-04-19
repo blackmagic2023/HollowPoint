@@ -1169,27 +1169,52 @@ Public Class RapidFire
 
     Private Sub AddIPBtn_Click(sender As Object, e As EventArgs) Handles AddIPBtn.Click
 
-        If My.Computer.Network.Ping(AddIPBox.Text) Then
-            ListView1.Items.Add(AddIPBox.Text)
-            Dim textToWrite As String = AddIPBox.Text
-            Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
-                writer.WriteLine(textToWrite + Environment.NewLine)
-            End Using
-            Dim myconnection As SqlClient.SqlConnection
-            Dim mycommand As SqlClient.SqlCommand
-            Dim id As Integer = My.Settings.DBentryid + 1
-            My.Settings.DBentryid = My.Settings.DBentryid + 1
-            My.Settings.Save()
+        Dim ip As String = AddIPBox.Text
 
-            myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
-            myconnection.Open()
-            mycommand = New SqlClient.SqlCommand("INSERT INTO [targetinfo]([id],[ipaddr]) VALUES('" + Str(id) + "','" + AddIPBox.Text + "')", myconnection)
-            mycommand.ExecuteNonQuery()
-            myconnection.Close()
-            AddIPBox.Clear()
+        ' Check if the IP already exists in the Online.txt file
+        Dim existingIPs As New List(Of String)(File.ReadAllLines("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt"))
+        If Not existingIPs.Contains(ip) Then
+            If My.Computer.Network.Ping(ip) Then
+                ListView1.Items.Add(ip)
+                Dim textToWrite As String = ip
+                Using writer As StreamWriter = File.AppendText("C:\Users\" + Environment.UserName + "\Documents\hollowpoint\Online.txt")
+                    writer.WriteLine(textToWrite)
+                End Using
 
+                ' Check if the IP already exists in the database table
+                Dim ipExistsInDatabase As Boolean = False
+                Using myconnection As New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                    myconnection.Open()
+                    Dim command As New SqlClient.SqlCommand("SELECT COUNT(*) FROM targetinfo WHERE ipaddr = @ip", myconnection)
+                    command.Parameters.AddWithValue("@ip", ip)
+                    Dim result As Integer = Convert.ToInt32(command.ExecuteScalar())
+                    If result > 0 Then
+                        ipExistsInDatabase = True
+                    End If
+                End Using
+
+                ' If the IP doesn't exist in the database, insert it
+                If Not ipExistsInDatabase Then
+                    Dim myconnection As SqlClient.SqlConnection
+                    Dim mycommand As SqlClient.SqlCommand
+                    Dim id As Integer = My.Settings.DBentryid + 1
+                    My.Settings.DBentryid = id
+                    My.Settings.Save()
+
+                    myconnection = New SqlClient.SqlConnection("Data Source=localhost\SQLEXPRESS;Initial Catalog=HPtargets;Integrated Security=True;TrustServerCertificate=True")
+                    myconnection.Open()
+                    mycommand = New SqlClient.SqlCommand("INSERT INTO [targetinfo]([id],[ipaddr]) VALUES('" + Str(id) + "','" + ip + "')", myconnection)
+                    mycommand.ExecuteNonQuery()
+                    myconnection.Close()
+                    AddIPBox.Clear()
+                Else
+                    MsgBox("The provided IP already exists in the database table!", MsgBoxStyle.OkOnly + MsgBoxStyle.Information, "Add IP Error!")
+                End If
+            Else
+                MsgBox("The provided IP is either invalid or offline!", MsgBoxStyle.OkOnly + MsgBoxStyle.Information, "Add IP Error!")
+            End If
         Else
-            MsgBox("The provided IP is either invalid or offline!", MsgBoxStyle.OkOnly + MsgBoxStyle.Information, "Add IP Error!")
+            MsgBox("The provided IP already exists in the list!", MsgBoxStyle.OkOnly + MsgBoxStyle.Information, "Add IP Error!")
         End If
 
     End Sub
